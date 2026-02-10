@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom"
 import { StatCard } from "@/components/ui/stat-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { DashboardSkeleton } from "@/components/ui/skeleton-card"
 import {
   TrendingUp,
   Users,
@@ -67,51 +68,40 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log("[v0] Fetching dashboard data...")
-        const [statsData, leadsData, activitiesData, callersData, callLogsData, followUpsData] = await Promise.all([
-          fetchDashboardStats().catch(e => {
-            console.error("[v0] Dashboard stats error:", e)
-            return null
-          }),
-          fetchLeads().catch(e => {
-            console.error("[v0] Leads error:", e)
-            return []
-          }),
-          fetchActivities().catch(e => {
-            console.error("[v0] Activities error:", e)
-            return []
-          }),
-          fetchCallers().catch(e => {
-            console.error("[v0] Callers error:", e)
-            return []
-          }),
-          fetchCallLogs().catch(e => {
-            console.error("[v0] Call logs error:", e)
-            return []
-          }),
-          fetchFollowUps().catch(e => {
-            console.error("[v0] Follow-ups error:", e)
-            return []
-          }),
-        ])
-
-        console.log("[v0] Dashboard stats received:", statsData)
-        console.log("[v0] Leads count:", leadsData?.length || 0)
+        // Priority 1: Load dashboard stats and top leads ASAP
+        const statsData = await fetchDashboardStats().catch((e) => {
+          console.error("[v0] Dashboard stats error:", e)
+          return null
+        })
 
         if (statsData) {
           setStats(statsData)
-          setLeads(leadsData || [])
-          setActivitiesData(activitiesData || [])
-          setCallers(callersData || [])
-          setCallLogs(callLogsData || [])
-          setFollowUps(followUpsData?.filter((fu: any) => fu.status === "pending") || [])
+          setLoading(false)
+
+          // Priority 2: Load leads in background
+          fetchLeads()
+            .then((leadsData) => setLeads(leadsData || []))
+            .catch(() => setLeads([]))
+
+          // Priority 3: Load other data in parallel (non-critical)
+          Promise.all([
+            fetchActivities().catch(() => []),
+            fetchCallers().catch(() => []),
+            fetchCallLogs().catch(() => []),
+            fetchFollowUps().catch(() => []),
+          ]).then(([activitiesData, callersData, callLogsData, followUpsData]) => {
+            setActivitiesData(activitiesData || [])
+            setCallers(callersData || [])
+            setCallLogs(callLogsData || [])
+            setFollowUps(followUpsData?.filter((fu: any) => fu.status === "pending") || [])
+          })
         } else {
           setError("Backend API not available. Make sure the server is running.")
+          setLoading(false)
         }
       } catch (error) {
         console.error("[v0] Error fetching dashboard data:", error)
         setError("Failed to fetch dashboard data. Please refresh the page.")
-      } finally {
         setLoading(false)
       }
     }
@@ -120,14 +110,7 @@ const Dashboard = () => {
   }, [])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
-        </div>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   if (error) {
