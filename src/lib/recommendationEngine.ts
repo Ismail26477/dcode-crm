@@ -124,3 +124,4 @@ export function getFollowUpInsights(analytics: LeadAnalytics) {
 
   return insights
 }
+
