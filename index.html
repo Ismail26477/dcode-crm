@@ -3,12 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    
+    <!-- Performance: DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
+    
+    <!-- Preconnect for faster resource loading -->
+    <link rel="preconnect" href="//fonts.googleapis.com" crossorigin>
+    
     <!-- Updated page title from Vedaa AI to Grab lead -->
     <title>Grab lead - Real Estate CRM</title>
     <!-- Updated meta description and author -->
     <meta name="description" content="Grab lead - A comprehensive Real Estate CRM platform for managing leads, customers, and sales pipelines." />
     <meta name="author" content="Grab lead" />
     <meta name="keywords" content="CRM, real estate, leads, sales, property management, India" />
+    <meta name="theme-color" content="#000000" />
 
     <meta property="og:title" content="Grab lead - Real Estate CRM" />
     <meta property="og:description" content="A comprehensive Real Estate CRM platform for managing leads, customers, and sales pipelines." />
@@ -20,6 +30,9 @@
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     
     <link rel="canonical" href="https://grablead.com" />
+    
+    <!-- Performance: Lazy load non-critical resources -->
+    <link rel="preload" as="script" href="/src/main.tsx" />
   </head>
 
   <body>
