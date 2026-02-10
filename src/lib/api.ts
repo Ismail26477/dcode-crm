@@ -1,24 +1,19 @@
 const getApiBaseUrl = () => {
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname
-    console.log("[v0] Current hostname:", hostname)
 
     // Local development - connect to backend server on port 5000
     if (hostname === "localhost" || hostname === "127.0.0.1") {
-      console.log("[v0] Localhost detected, connecting to backend on port 5000")
       return "http://localhost:5000/api"
     }
 
     // Production - use environment variable
-    console.log("[v0] Production detected, checking VITE_API_URL")
     const envUrl = import.meta.env.VITE_API_URL
     if (envUrl) {
-      console.log("[v0] Using VITE_API_URL:", envUrl)
       return envUrl
     }
 
     // Fallback if not set
-    console.log("[v0] VITE_API_URL not set, using relative /api path")
     return "/api"
   }
 
@@ -28,13 +23,41 @@ const getApiBaseUrl = () => {
 }
 
 const API_BASE_URL = getApiBaseUrl()
-console.log("[v0] Final API_BASE_URL:", API_BASE_URL)
+
+// Request deduplication cache
+const requestCache = new Map<string, Promise<any>>()
+
+// Optimized fetch with deduplication
+const fetchWithDedup = (url: string, options?: RequestInit) => {
+  const cacheKey = url + JSON.stringify(options || {})
+
+  if (requestCache.has(cacheKey)) {
+    return requestCache.get(cacheKey)!
+  }
+
+  const promise = fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    })
+    .finally(() => {
+      // Clear cache after 30 seconds
+      setTimeout(() => requestCache.delete(cacheKey), 30000)
+    })
+
+  requestCache.set(cacheKey, promise)
+  return promise
+}
 
 // Leads
 export const fetchLeads = async () => {
-  const response = await fetch(`${API_BASE_URL}/leads`)
-  if (!response.ok) throw new Error("Failed to fetch leads")
-  const data = await response.json()
+  const data = await fetchWithDedup(`${API_BASE_URL}/leads`)
   // Normalize data to ensure all required string fields have default values
   return data.map((lead: any) => ({
     ...lead,
